@@ -1,0 +1,37 @@
+services:
+  users_service:
+    build: .
+    ports:
+      - "8000:8000"
+    command: >
+      bash -c "PYTHONPATH=/app .venv/bin/alembic upgrade head &&
+      .venv/bin/fastapi run --port 8000 --host 0.0.0.0"
+    container_name: users_service
+    env_file:
+      - .env_app
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - backend
+
+  postgres:
+    image: postgres:alpine3.22
+    volumes:
+      - ./db_data/users_service:/var/lib/postgresql
+    ports:
+      - "5432:5432"
+    container_name: users_service_postgres_db
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - .env_db
+    networks:
+      - backend
+
+networks:
+  backend:
+    driver: bridge
