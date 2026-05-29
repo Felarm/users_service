@@ -27,5 +27,5 @@ def get_session_service(session: AsyncSession = Depends(get_db_session)) -> Sess
 
 
 async def get_service_user_id(service_token: HTTPAuthorizationCredentials = Depends(token_bearer)) -> str:
-    payload = JWTService.get_service_token_payload(service_token.credentials)
+    payload = JWTService().get_service_token_payload(service_token.credentials)
     return payload.sub

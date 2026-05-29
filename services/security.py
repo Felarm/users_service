@@ -1,13 +1,14 @@
 import secrets
 import string
+from dataclasses import dataclass
 from datetime import datetime, UTC, timedelta
 from typing import Union
 
-from jose import jwt, JWTError
+from jose import jwt, JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
 
 from config import settings
-from exceptions import UnauthorizedException
+from exceptions import WrongTokenTypeException, InvalidTokenException, ExpiredTokenException
 from schemas.token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse
 from schemas.user import UserModelResponse
 
@@ -28,6 +29,13 @@ class PasswordService:
         alphabet = string.ascii_letters + string.digits
         random_chars = "".join(secrets.choice(alphabet) for _ in range(16))
         return cls.pwd_context.hash(random_chars)
+
+
+@dataclass
+class TokenTypes:
+    access: str = "access"
+    refresh: str = "refresh"
+    service: str = "service"
 
 
 class JWTService:
@@ -76,31 +84,29 @@ class JWTService:
         return jwt.encode(payload.model_dump(), settings.SECRET_KEY, settings.ALGORITHM)
 
     @staticmethod
-    def get_service_token_payload(encoded_token: str) -> ServiceTokenPayload:
+    def get_token_payload(
+            encoded_token: str, token_type: str) -> Union[AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload]:
+        payload_types_map = {
+            TokenTypes.access: AccessTokenPayload,
+            TokenTypes.refresh: RefreshTokenPayload,
+            TokenTypes.service: ServiceTokenPayload,
+        }
+        if token_type not in payload_types_map:
+            raise WrongTokenTypeException(token_type)
         try:
-            payload = ServiceTokenPayload(**jwt.decode(encoded_token, settings.SECRET_KEY, settings.ALGORITHM))
+            return payload_types_map[token_type](
+                **jwt.decode(encoded_token, settings.SECRET_KEY, settings.ALGORITHM)
+            )
+        except ExpiredSignatureError:
+            raise ExpiredTokenException(token_type)
         except JWTError as e:
-            raise UnauthorizedException("Wrong token data") from e
-        if payload.type != "service":
-            raise UnauthorizedException("Wrong token type")
-        return payload
+            raise InvalidTokenException(token_type) from e
 
-    @staticmethod
-    def get_refresh_token_payload(encoded_token: str) -> RefreshTokenPayload:
-        try:
-            payload = RefreshTokenPayload(**jwt.decode(encoded_token, settings.SECRET_KEY, settings.ALGORITHM))
-        except JWTError as e:
-            raise UnauthorizedException("Wrong token data") from e
-        if payload.type != "refresh":
-            raise UnauthorizedException("Wrong token type")
-        return payload
+    def get_service_token_payload(self, encoded_token: str) -> ServiceTokenPayload:
+        return self.get_token_payload(encoded_token, TokenTypes.service)
 
-    @staticmethod
-    def get_access_token_payload(encoded_token: str) -> AccessTokenPayload:
-        try:
-            payload = AccessTokenPayload(**jwt.decode(encoded_token, settings.SECRET_KEY, settings.ALGORITHM))
-        except JWTError as e:
-            raise UnauthorizedException("Wrong token data") from e
-        if payload.type != "access":
-            raise UnauthorizedException("Wrong token type")
-        return payload
+    def get_refresh_token_payload(self, encoded_token: str) -> RefreshTokenPayload:
+        return self.get_token_payload(encoded_token, TokenTypes.refresh)
+
+    def get_access_token_payload(self, encoded_token: str) -> AccessTokenPayload:
+        return self.get_token_payload(encoded_token, TokenTypes.access)

@@ -59,6 +59,11 @@ def session_service(db_session) -> SessionService:
     return SessionService(db_session)
 
 
+@pytest.fixture(scope="function")
+def jwt_service() -> JWTService:
+    return JWTService()
+
+
 @pytest_asyncio.fixture(scope="function")
 async def single_user(user_service) -> UserModelResponse:
     return await user_service.register_new_user(UserCreate(username="single_user", password="pwd", tg_id=1111))

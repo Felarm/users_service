@@ -4,9 +4,9 @@ from datetime import datetime, timedelta, UTC
 import pytest
 
 from config import settings
-from exceptions import UnauthorizedException
+from exceptions import SessionNotFoundException, ExpiredTokenException
 from schemas.user import UserCreate, UserModelResponse, UserFromTg, UserLogin
-from services.security import JWTService, PasswordService
+from services.security import JWTService
 
 
 class TestUserService:
@@ -52,9 +52,11 @@ class TestJWTService:
         assert int(refresh_expected_exp_dt.timestamp()) == refresh_payload.exp
 
     @pytest.mark.asyncio
-    def test_create_tokens_for_user(self, single_user, single_users_tokens):
-        access_payload = JWTService.get_access_token_payload(single_users_tokens.access_token)
-        refresh_payload = JWTService.get_refresh_token_payload(single_users_tokens.refresh_token)
+    def test_create_tokens_for_user(
+            self, single_user, single_users_tokens, jwt_service
+    ):
+        access_payload = jwt_service.get_access_token_payload(single_users_tokens.access_token)
+        refresh_payload = jwt_service.get_refresh_token_payload(single_users_tokens.refresh_token)
         assert int(access_payload.sub) == single_user.id
         assert access_payload.username == single_user.username
         assert access_payload.type == "access"
@@ -66,9 +68,13 @@ class TestJWTService:
 class TestSessionService:
     @pytest.mark.asyncio
     async def test_get_user_session_by_token(
-            self, session_service, single_users_tokens, single_user_session,
+            self,
+            session_service,
+            single_users_tokens,
+            single_user_session,
+            jwt_service,
     ):
-        refresh_token_payload = JWTService.get_refresh_token_payload(single_users_tokens.refresh_token)
+        refresh_token_payload = jwt_service.get_refresh_token_payload(single_users_tokens.refresh_token)
         user_session = await session_service.get_user_session_by_token(single_users_tokens.refresh_token)
         assert user_session.id == single_user_session.id
         assert user_session.user_id == int(refresh_token_payload.sub)
@@ -78,7 +84,7 @@ class TestSessionService:
     @pytest.mark.asyncio
     async def test_revoke_user_session(self, session_service, single_user_session, single_users_tokens):
         await session_service.revoke_user_session(single_user_session.id)
-        with pytest.raises(UnauthorizedException):
+        with pytest.raises(SessionNotFoundException):
             await session_service.get_user_session_by_token(single_users_tokens.refresh_token)
 
     @pytest.mark.asyncio
@@ -88,5 +94,5 @@ class TestSessionService:
         refresh_jwt = JWTService._encode_jwt(refresh_payload)
         await session_service.create_session_for_user(single_user.id, refresh_jwt)
         await asyncio.sleep(1)
-        with pytest.raises(UnauthorizedException):
+        with pytest.raises(ExpiredTokenException):
             await session_service.get_user_session_by_token(refresh_jwt)

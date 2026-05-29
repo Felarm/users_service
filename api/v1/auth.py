@@ -9,6 +9,7 @@ from services.security import JWTService
 from services.session import SessionService
 from services.user import UserService
 
+
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 UserService_ = Annotated[UserService, Depends(get_user_service)]
 SessionService_ = Annotated[SessionService, Depends(get_session_service)]
@@ -73,7 +74,8 @@ async def refresh_tokens(
         session_service: SessionService_,
         user_service: UserService_,
 ):
-    refresh_token_payload = JWTService.get_refresh_token_payload(token.refresh_token)
+    jwt_service = JWTService()
+    refresh_token_payload = jwt_service.get_refresh_token_payload(token.refresh_token)
     if not refresh_token_payload:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
     active_session = await session_service.get_user_session_by_token(token.refresh_token)
@@ -81,7 +83,7 @@ async def refresh_tokens(
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Session not found or expired")
     user = await user_service.get_user_by(UserFilter(id=int(refresh_token_payload.sub)))
     await session_service.revoke_user_session(active_session.id)
-    new_tokens = JWTService().create_tokens_for_user(user)
+    new_tokens = jwt_service.create_tokens_for_user(user)
     await session_service.create_session_for_user(user.id, new_tokens.refresh_token)
     return new_tokens
 

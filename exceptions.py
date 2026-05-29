@@ -21,3 +21,33 @@ class ValidationException(BaseAppException):
 class UnauthorizedException(BaseAppException):
     def __init__(self, msg: str):
         super().__init__(msg, status_code=status.HTTP_401_UNAUTHORIZED)
+
+
+class UserNotFoundException(ResourceNotFoundException):
+    pass
+
+
+class SessionNotFoundException(ResourceNotFoundException):
+    pass
+
+
+class TokenException(UnauthorizedException):
+    def __init__(self, token_type: str, err_type: str):
+        super().__init__(msg="Token error")
+        self.token_type = token_type
+        self.err_type = err_type
+
+
+class ExpiredTokenException(TokenException):
+    def __init__(self, token_type: str):
+        super().__init__(token_type, "expired token")
+
+
+class InvalidTokenException(TokenException):
+    def __init__(self, token_type: str):
+        super().__init__(token_type, "invalid token")
+
+
+class WrongTokenTypeException(TokenException):
+    def __init__(self, token_type: str):
+        super().__init__(token_type, "wrong token type")

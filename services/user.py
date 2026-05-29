@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import ResourceNotFoundException, ValidationException, UnauthorizedException
+from exceptions import ValidationException, UnauthorizedException, UserNotFoundException
 from repositories.user import UserRepository
 from schemas.user import UserFilter, UserModelResponse, UserCreate, UserFromTg, UserLogin
 from services.security import PasswordService
@@ -20,7 +20,7 @@ class UserService:
         else:
             raise ValidationException(f"Can't filter users with params: {by_params}")
         if not user_obj:
-            raise ResourceNotFoundException(f"User not found with params: {by_params}")
+            raise UserNotFoundException(f"User not found with params: {by_params}")
         return UserModelResponse.model_validate(user_obj)
 
     async def get_all_users(self) -> list[UserModelResponse]:
@@ -46,7 +46,7 @@ class UserService:
     async def login_user_by_password(self, login_data: UserLogin) -> UserModelResponse:
         user_obj = await self.repo.get_user_by_username(login_data.username)
         if not user_obj:
-            raise ResourceNotFoundException(f"No user with username '{login_data.username}' exists")
+            raise UserNotFoundException(f"No user with username '{login_data.username}' exists")
         if not PasswordService.verify_password(login_data.password, user_obj.hashed_password):
             raise UnauthorizedException(f"Password {login_data.password} is wrong")
         return UserModelResponse.model_validate(user_obj)

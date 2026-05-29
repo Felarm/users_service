@@ -7,7 +7,7 @@ from loguru import logger
 
 from api.v1.auth import router as auth_router
 from api.v1.user import router as users_router
-from exceptions import BaseAppException
+from exceptions import BaseAppException, TokenException
 from tasks import delete_expired_user_sessions
 
 
@@ -31,3 +31,11 @@ async def base_app_exc_handler(request: Request, exc: BaseAppException):
         content={"detail": exc.msg}
     )
 
+
+@app.exception_handler(TokenException)
+async def token_exc_handler(request: Request, exc: TokenException):
+    logger.error(exc.msg)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.msg, "token type": exc.token_type, "error type": exc.err_type}
+    )
