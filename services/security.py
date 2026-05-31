@@ -1,6 +1,5 @@
 import secrets
 import string
-from dataclasses import dataclass
 from datetime import datetime, UTC, timedelta
 from typing import Union
 
@@ -8,8 +7,9 @@ from jose import jwt, JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
 
 from config import settings
-from exceptions import WrongTokenTypeException, InvalidTokenException, ExpiredTokenException
-from schemas.token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse
+from exceptions import TokenException
+from schemas.token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes, \
+    TokenErrors
 from schemas.user import UserModelResponse
 
 
@@ -29,13 +29,6 @@ class PasswordService:
         alphabet = string.ascii_letters + string.digits
         random_chars = "".join(secrets.choice(alphabet) for _ in range(16))
         return cls.pwd_context.hash(random_chars)
-
-
-@dataclass
-class TokenTypes:
-    access: str = "access"
-    refresh: str = "refresh"
-    service: str = "service"
 
 
 class JWTService:
@@ -87,26 +80,29 @@ class JWTService:
     def get_token_payload(
             encoded_token: str, token_type: str) -> Union[AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload]:
         payload_types_map = {
-            TokenTypes.access: AccessTokenPayload,
-            TokenTypes.refresh: RefreshTokenPayload,
-            TokenTypes.service: ServiceTokenPayload,
+            TokenTypes.ACCESS: AccessTokenPayload,
+            TokenTypes.REFRESH: RefreshTokenPayload,
+            TokenTypes.SERVICE: ServiceTokenPayload,
         }
         if token_type not in payload_types_map:
-            raise WrongTokenTypeException(token_type)
+            raise TokenException(token_type, TokenErrors.WRONG_TOKEN_TYPE)
         try:
-            return payload_types_map[token_type](
+            payload = payload_types_map[token_type](
                 **jwt.decode(encoded_token, settings.SECRET_KEY, settings.ALGORITHM)
             )
+            if payload.type != token_type:
+                raise TokenException(payload.type, TokenErrors.WRONG_TOKEN_TYPE)
+            return payload
         except ExpiredSignatureError:
-            raise ExpiredTokenException(token_type)
+            raise TokenException(token_type, TokenErrors.EXPIRED)
         except JWTError as e:
-            raise InvalidTokenException(token_type) from e
+            raise TokenException(token_type, TokenErrors.INVALID_DATA) from e
 
     def get_service_token_payload(self, encoded_token: str) -> ServiceTokenPayload:
-        return self.get_token_payload(encoded_token, TokenTypes.service)
+        return self.get_token_payload(encoded_token, TokenTypes.SERVICE)
 
     def get_refresh_token_payload(self, encoded_token: str) -> RefreshTokenPayload:
-        return self.get_token_payload(encoded_token, TokenTypes.refresh)
+        return self.get_token_payload(encoded_token, TokenTypes.REFRESH)
 
     def get_access_token_payload(self, encoded_token: str) -> AccessTokenPayload:
-        return self.get_token_payload(encoded_token, TokenTypes.access)
+        return self.get_token_payload(encoded_token, TokenTypes.ACCESS)

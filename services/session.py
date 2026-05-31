@@ -2,7 +2,7 @@ from datetime import datetime, UTC
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import SessionNotFoundException, ExpiredTokenException
+from exceptions import SessionNotFoundException
 from repositories.session import SessionRepository
 from schemas.session import SessionModel
 from services.security import JWTService
@@ -24,7 +24,6 @@ class SessionService:
             raise SessionNotFoundException("No session for this token exists")
         if current_session.expires_at < datetime.now(UTC):
             await self.revoke_user_session(current_session.id)
-            raise ExpiredTokenException("refresh")
         return SessionModel.model_validate(current_session)
 
     async def revoke_user_session(self, user_session_id: int) -> None:

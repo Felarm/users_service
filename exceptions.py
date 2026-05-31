@@ -36,18 +36,3 @@ class TokenException(UnauthorizedException):
         super().__init__(msg="Token error")
         self.token_type = token_type
         self.err_type = err_type
-
-
-class ExpiredTokenException(TokenException):
-    def __init__(self, token_type: str):
-        super().__init__(token_type, "expired token")
-
-
-class InvalidTokenException(TokenException):
-    def __init__(self, token_type: str):
-        super().__init__(token_type, "invalid token")
-
-
-class WrongTokenTypeException(TokenException):
-    def __init__(self, token_type: str):
-        super().__init__(token_type, "wrong token type")

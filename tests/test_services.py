@@ -4,7 +4,8 @@ from datetime import datetime, timedelta, UTC
 import pytest
 
 from config import settings
-from exceptions import SessionNotFoundException, ExpiredTokenException
+from exceptions import SessionNotFoundException, TokenException
+from schemas.token import TokenTypes
 from schemas.user import UserCreate, UserModelResponse, UserFromTg, UserLogin
 from services.security import JWTService
 
@@ -59,10 +60,10 @@ class TestJWTService:
         refresh_payload = jwt_service.get_refresh_token_payload(single_users_tokens.refresh_token)
         assert int(access_payload.sub) == single_user.id
         assert access_payload.username == single_user.username
-        assert access_payload.type == "access"
+        assert access_payload.type == TokenTypes.ACCESS
         assert int(refresh_payload.sub) == single_user.id
         assert refresh_payload.username == single_user.username
-        assert refresh_payload.type == "refresh"
+        assert refresh_payload.type == TokenTypes.REFRESH
 
 
 class TestSessionService:
@@ -94,5 +95,5 @@ class TestSessionService:
         refresh_jwt = JWTService._encode_jwt(refresh_payload)
         await session_service.create_session_for_user(single_user.id, refresh_jwt)
         await asyncio.sleep(1)
-        with pytest.raises(ExpiredTokenException):
+        with pytest.raises(TokenException):
             await session_service.get_user_session_by_token(refresh_jwt)
