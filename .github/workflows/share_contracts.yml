@@ -15,8 +15,8 @@ jobs:
       - name: Start app and export schema inside docker
         run: |
             docker compose up --build -d
-            docker compose exec -T users_service python /app/schemas/export_schema.py
-            docker cp $(docker compose ps -q users_service):/app/schemas/openapi.json ./schemas/openapi.json
+            docker compose exec -T users_service python schemas/export_schema.py
+            docker cp $(docker compose ps -q users_service):schemas/openapi.json ./schemas/openapi.json
             docker compose down
 
       - name: Checkout command bot service
