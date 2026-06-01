@@ -16,7 +16,7 @@ jobs:
         run: |
             docker compose up --build -d
             docker compose exec -T -w /app users_service sh -c "PYTHONPATH=/app .venv/bin/python -m schemas.export"
-            docker cp $(docker compose ps -q users_service):/app/schemas/openapi.json ./schemas/openapi.json
+            docker cp users_service:/app/openapi.json schemas/openapi.json
             docker compose down
 
       - name: Checkout command bot service
