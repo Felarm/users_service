@@ -1,7 +1,9 @@
 import json
 
+from loguru import logger
 from pydantic import BaseModel
 
+from main import app
 from schemas.token import AccessTokenPayload, RefreshTokenPayload, TokenModelResponse, RefreshTokenRequest, \
     TokenExceptionContent
 from schemas.user import UserFromTg
@@ -17,15 +19,12 @@ class ContractRegistry(BaseModel):
     user_tg_request: UserFromTg
 
 
+@app.get("/__contracts", response_model=ContractRegistry, include_in_schema=False)
+def __get_contracts():
+    pass
 
 
 if __name__ == "__main__":
-    from main import app
-
-    @app.get("/__contracts", response_model=ContractRegistry, include_in_schema=False)
-    def __get_contracts():
-        pass
-
     with open("openapi.json", "w") as f:
         json.dump(app.openapi(), f, indent=2)
-    print("exported schemas to openapi.json")
+    logger.info("exported schemas to openapi.json")

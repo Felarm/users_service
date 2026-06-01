@@ -12,15 +12,12 @@ jobs:
       - name: Checkout users service
         uses: actions/checkout@v4
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-
-      - name: Generate OpenAPI JSON
-        run: uv run python schemas/export.py
-        env:
-          PYTHONPATH: .
+      - name: Start app and export schema inside docker
+        run: |
+            docker compose up --build -d
+            docker compose exec -T users_service python schemas/export_schema.py
+            docker cp $(docker compose ps -q users_service):schemas/openapi.json ./schemas/openapi.json
+            docker compose down
 
       - name: Checkout command bot service
         uses: actions/checkout@v4
