@@ -8,7 +8,7 @@ from loguru import logger
 from api.v1.auth import router as auth_router
 from api.v1.user import router as users_router
 from exceptions import BaseAppException, TokenException
-from schemas.token import TokenExceptionContent
+from schemas.auth_token import TokenExceptionContent
 from tasks import delete_expired_user_sessions
 
 

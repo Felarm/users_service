@@ -8,7 +8,7 @@ from httpx import AsyncClient
 from exceptions import SessionNotFoundException
 from main import app
 from schemas.session import SessionModel
-from schemas.token import TokenModelResponse, RefreshTokenRequest, TokenExceptionContent, TokenErrors, TokenTypes
+from schemas.auth_token import TokenModelResponse, RefreshTokenRequest, TokenExceptionContent, TokenErrors, TokenTypes
 from schemas.user import UserFromTg, UserCreate, UserLogin, UserModelResponse
 from services.security import JWTService
 from services.session import SessionService

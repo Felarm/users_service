@@ -4,7 +4,7 @@ from loguru import logger
 from pydantic import BaseModel
 
 from main import app
-from schemas.token import AccessTokenPayload, RefreshTokenPayload, TokenModelResponse, RefreshTokenRequest, \
+from schemas.auth_token import AccessTokenPayload, RefreshTokenPayload, TokenModelResponse, RefreshTokenRequest, \
     TokenExceptionContent
 from schemas.user import UserFromTg
 

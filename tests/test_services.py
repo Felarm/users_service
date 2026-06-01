@@ -5,7 +5,7 @@ import pytest
 
 from config import settings
 from exceptions import SessionNotFoundException, TokenException
-from schemas.token import TokenTypes
+from schemas.auth_token import TokenTypes
 from schemas.user import UserCreate, UserModelResponse, UserFromTg, UserLogin
 from services.security import JWTService
 

@@ -12,7 +12,7 @@ from main import app
 from repositories.session import SessionRepository
 from repositories.user import UserRepository
 from schemas.session import SessionModel
-from schemas.token import TokenModelResponse
+from schemas.auth_token import TokenModelResponse
 from schemas.user import UserModelResponse, UserCreate
 from services.security import JWTService
 from services.session import SessionService

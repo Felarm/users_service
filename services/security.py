@@ -8,7 +8,7 @@ from passlib.context import CryptContext
 
 from config import settings
 from exceptions import TokenException
-from schemas.token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes, \
+from schemas.auth_token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes, \
     TokenErrors
 from schemas.user import UserModelResponse
 

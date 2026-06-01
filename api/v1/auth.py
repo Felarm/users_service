@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, status, Depends
 
 from dependencies import get_user_service, get_session_service, get_service_user_id
-from schemas.token import TokenModelResponse, RefreshTokenRequest, TokenExceptionContent
+from schemas.auth_token import TokenModelResponse, RefreshTokenRequest, TokenExceptionContent
 from schemas.user import UserFromTg, UserCreate, UserFilter, UserLogin
 from services.security import JWTService
 from services.session import SessionService
