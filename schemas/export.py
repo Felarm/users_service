@@ -1,5 +1,6 @@
 import json
 
+from loguru import logger
 from pydantic import BaseModel
 
 from main import app
@@ -26,4 +27,4 @@ def __get_contracts():
 if __name__ == "__main__":
     with open("openapi.json", "w") as f:
         json.dump(app.openapi(), f, indent=2)
-    print("exported schemas to openapi.json")
+    logger.info("exported schemas to openapi.json")

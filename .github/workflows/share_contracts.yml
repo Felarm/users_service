@@ -19,6 +19,8 @@ jobs:
 
       - name: Generate OpenAPI JSON
         run: uv run python schemas/export.py
+        env:
+          PYTHONPATH: .
 
       - name: Checkout command bot service
         uses: actions/checkout@v4
