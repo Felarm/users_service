@@ -32,12 +32,15 @@ jobs:
           cp schemas/openapi.json resource-service-dir/schemas/users_service_openapi.json
 
       - name: Push schema file
+        env:
+          PAT_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
         run: |
           cd resource-service-dir
           git config --global user.name "github-actions-bot"
           git config --global user.email "github-actions-bot@github.com"
           git add schemas/users_service_openapi.json
           git diff-index --quiet HEAD || git commit -m "fetch latest contracts from users service"
+          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@://github.com"
           git push origin master
 
 
