@@ -1,0 +1,44 @@
+name: Share token contract to other resources
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  publish-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout users service
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Generate OpenAPI JSON
+        run: uv run python schemas/export.py
+
+      - name: Checkout command bot service
+        uses: actions/checkout@v4
+        with:
+          repository: "Felarm/command_bot"
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          path: "resource-service-dir"
+
+      - name: Copy schema
+        run: |
+          mkdir -p resource-service-dir/schemas
+          cp openapi.json resource-service-dir/schemas/users_service_openapi.json
+
+      - name: Push schema file
+        run: |
+          cd resource-service-dir
+          git config --global user.name "github-actions-bot"
+          git config --global user.email "github-actions-bot@github.com"
+          git add schemas/users_service_openapi.json
+          git diff-index --quiet HEAD || git commit -m "fetch latest contracts from users service"
+          git push origin master
+
+

@@ -3,7 +3,6 @@ from typing import Optional
 
 from pydantic import BaseModel, EmailStr, ConfigDict
 
-
 class UserBase(BaseModel):
     username: str
     email: Optional[EmailStr] = None
@@ -36,7 +35,6 @@ class UserFilter(BaseModel):
 
 class UserModelResponse(UserBase):
     id: int
-    is_service: bool
     is_active: bool
     created_at: datetime
     updated_at: datetime
