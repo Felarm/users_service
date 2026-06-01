@@ -29,7 +29,7 @@ jobs:
       - name: Copy schema
         run: |
           mkdir -p resource-service-dir/schemas
-          cp openapi.json resource-service-dir/schemas/users_service_openapi.json
+          cp schemas/openapi.json resource-service-dir/schemas/users_service_openapi.json
 
       - name: Push schema file
         run: |
