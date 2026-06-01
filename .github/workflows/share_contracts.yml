@@ -40,7 +40,7 @@ jobs:
           git config --global user.email "github-actions-bot@github.com"
           git add schemas/users_service_openapi.json
           git diff-index --quiet HEAD || git commit -m "fetch latest contracts from users service"
-          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@://github.com"
+          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/Felarm/command_bot.git"
           git push origin master
 
 
