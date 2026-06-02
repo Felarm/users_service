@@ -15,7 +15,7 @@ jobs:
       - name: Start app and export schema inside docker
         run: |
             docker compose up --build -d
-            docker compose exec -T -w /app users_service sh -c "PYTHONPATH=/app .venv/bin/python -m schemas.export"
+            docker compose exec -T -w /app users_service sh -c "PYTHONPATH=/app .venv/bin/python -m commands export_openapi"
             docker cp users_service:/app/openapi.json schemas/openapi.json
             docker compose down
 
