@@ -34,7 +34,6 @@ class TestUserService:
 
 
 class TestJWTService:
-    @pytest.mark.asyncio
     def test_create_access_payload(self, single_user):
         access_payload = JWTService._create_access_payload(single_user)
         assert access_payload.username == single_user.username
@@ -43,7 +42,6 @@ class TestJWTService:
         access_expected_exp_dt = datetime.now(UTC) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
         assert int(access_expected_exp_dt.timestamp()) == access_payload.exp
 
-    @pytest.mark.asyncio
     def test_create_refresh_payload(self, single_user):
         refresh_payload = JWTService._create_refresh_payload(single_user)
         assert refresh_payload.username == single_user.username
@@ -52,7 +50,6 @@ class TestJWTService:
         refresh_expected_exp_dt = datetime.now(UTC) + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
         assert int(refresh_expected_exp_dt.timestamp()) == refresh_payload.exp
 
-    @pytest.mark.asyncio
     def test_create_tokens_for_user(
             self, single_user, single_users_tokens, jwt_service
     ):
