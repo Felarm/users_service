@@ -1,4 +1,4 @@
-name: Share token contract to other resources
+name: Share contracts to other resources
 
 on:
   push:
@@ -12,11 +12,12 @@ jobs:
       - name: Checkout users service
         uses: actions/checkout@v4
 
-      - name: Start app and export schema inside docker
+      - name: Start app and generate contracts inside docker
         run: |
             docker compose up --build -d
             docker compose exec -T -w /app users_service sh -c "PYTHONPATH=/app .venv/bin/python -m commands export_openapi"
-            docker cp users_service:/app/openapi.json schemas/openapi.json
+            docker compose exec -T -w /app users_service sh -c "uvx --from datamodel-code-generator datamodel-codegen --input openapi.json --output users_service_contracts.py --capitalize-enum-members"
+            docker cp users_service:/app/users_service_contracts.py schemas/users_service_contracts.py
             docker compose down
 
       - name: Checkout command bot service
@@ -26,21 +27,24 @@ jobs:
           token: ${{ secrets.CROSS_REPO_TOKEN }}
           path: "resource-service-dir"
 
-      - name: Copy schema
+      - name: Copy contracts to command bot
         run: |
           mkdir -p resource-service-dir/schemas
-          cp schemas/openapi.json resource-service-dir/schemas/users_service_openapi.json
+          cp schemas/users_service_contracts.py resource-service-dir/schemas/users_service_contracts.py
 
-      - name: Push schema file
-        env:
-          PAT_TOKEN: ${{ secrets.CROSS_REPO_TOKEN }}
-        run: |
-          cd resource-service-dir
-          git config --global user.name "github-actions-bot"
-          git config --global user.email "github-actions-bot@github.com"
-          git add schemas/users_service_openapi.json
-          git diff-index --quiet HEAD || git commit -m "fetch latest contracts from users service"
-          git remote set-url origin "https://x-access-token:${PAT_TOKEN}@github.com/Felarm/command_bot.git"
-          git push origin master
+      - name: Create PR in command bot repo
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.CROSS_REPO_TOKEN }}
+          path: "resource-service-dir"
+          commit-message: "auto-update users service contracts"
+          branch: "automation/update-users-service-contracts"
+          title: "Updated contracts from users service"
+          body: |
+            Users service updated its models
+            This PR has datamodel-codegen version of it
+            Please verify before merging
+          base: master
+
 
 
