@@ -4,7 +4,9 @@ from datetime import datetime, UTC, timedelta
 from typing import Union
 
 from jose import jwt, JWTError, ExpiredSignatureError
-from passlib.context import CryptContext
+from pwdlib import PasswordHash
+from pwdlib.hashers.argon2 import Argon2Hasher
+from pwdlib.hashers.bcrypt import BcryptHasher
 
 from config import settings
 from exceptions import TokenException
@@ -14,7 +16,7 @@ from schemas.user import UserModelResponse
 
 
 class PasswordService:
-    pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
+    pwd_context = PasswordHash(hashers=[Argon2Hasher(), BcryptHasher()])
 
     @classmethod
     def verify_password(cls, input_password: str, hashed_password: str) -> bool:
