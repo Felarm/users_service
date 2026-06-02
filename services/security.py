@@ -14,7 +14,7 @@ from schemas.user import UserModelResponse
 
 
 class PasswordService:
-    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+    pwd_context = CryptContext(schemes=["bcrypt_sha256"], deprecated="auto")
 
     @classmethod
     def verify_password(cls, input_password: str, hashed_password: str) -> bool:
