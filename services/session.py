@@ -21,7 +21,7 @@ class SessionService:
         refresh_payload = JWTService().get_refresh_token_payload(encoded_refresh_token)
         current_session = await self.repo.get_session_by_jti(refresh_payload.jti)
         if current_session is None:
-            raise SessionNotFoundException("No session for this token exists")
+            raise SessionNotFoundException
         if current_session.expires_at < datetime.now(UTC):
             await self.revoke_user_session(current_session.id)
         return SessionModel.model_validate(current_session)

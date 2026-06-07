@@ -8,8 +8,8 @@ from pwdlib import PasswordHash
 
 from config import settings
 from exceptions import TokenException
-from schemas.auth_token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes, \
-    TokenErrors
+from schemas.auth_token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes
+from schemas.errors import TokenErrors
 from schemas.user import UserModelResponse
 
 

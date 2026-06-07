@@ -1,6 +1,6 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from exceptions import ValidationException, UnauthorizedException, UserNotFoundException
+from exceptions import ValidationException, UserNotFoundException, ResourceConflictException
 from repositories.user import UserRepository
 from schemas.user import UserFilter, UserModelResponse, UserCreate, UserFromTg, UserLogin
 from services.security import PasswordService
@@ -30,7 +30,7 @@ class UserService:
     async def register_new_user(self, create_data: UserCreate) -> UserModelResponse:
         existing_user = await self.repo.get_user_by_username(create_data.username)
         if existing_user:
-            raise UnauthorizedException(f"{create_data.username} already exists")
+            raise ResourceConflictException(f"{create_data.username} already exists")
         hashed_password = PasswordService.hash_password(create_data.password)
         new_user_obj = await self.repo.create_user(hashed_password, **create_data.model_dump(exclude={"password"}))
         return UserModelResponse.model_validate(new_user_obj)
@@ -38,7 +38,7 @@ class UserService:
     async def register_user_from_tg(self, create_data: UserFromTg) -> UserModelResponse:
         existing_user = await self.repo.get_user_by_tg_id(create_data.tg_id)
         if existing_user:
-            raise UnauthorizedException(f"We already registered this user")
+            raise ResourceConflictException(f"We already registered this user")
         hashed_password = PasswordService.generate_n_hash_password()
         new_user_obj = await self.repo.create_user(hashed_password, **create_data.model_dump(exclude={"password"}))
         return UserModelResponse.model_validate(new_user_obj)
@@ -48,5 +48,5 @@ class UserService:
         if not user_obj:
             raise UserNotFoundException(f"No user with username '{login_data.username}' exists")
         if not PasswordService.verify_password(login_data.password, user_obj.hashed_password):
-            raise UnauthorizedException(f"Password {login_data.password} is wrong")
+            raise ResourceConflictException(f"Password {login_data.password} is wrong")  # todo 401 is better
         return UserModelResponse.model_validate(user_obj)

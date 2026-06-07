@@ -8,7 +8,8 @@ from httpx import AsyncClient
 from exceptions import SessionNotFoundException
 from main import app
 from schemas.session import SessionModel
-from schemas.auth_token import TokenModelResponse, RefreshTokenRequest, TokenExceptionContent, TokenErrors, TokenTypes
+from schemas.auth_token import TokenModelResponse, RefreshTokenRequest, TokenTypes
+from schemas.errors import TokenErrors, TokenErrorContent
 from schemas.user import UserFromTg, UserCreate, UserLogin, UserModelResponse
 from services.security import JWTService
 from services.session import SessionService
@@ -107,7 +108,7 @@ class TestAuthFails:
             json=wrong_token_request.model_dump(),
         )
         assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED
-        res_data = TokenExceptionContent.model_validate(refresh_response.json())
+        res_data = TokenErrorContent.model_validate(refresh_response.json())
         assert res_data.error_type == TokenErrors.WRONG_TOKEN_TYPE
         assert res_data.token_type == TokenTypes.ACCESS
         login_response = await async_client.post(
@@ -116,7 +117,7 @@ class TestAuthFails:
             json=UserFromTg(username="wrong user", tg_id=12345).model_dump(),
         )
         assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
-        res_data = TokenExceptionContent.model_validate(login_response.json())
+        res_data = TokenErrorContent.model_validate(login_response.json())
         assert res_data.error_type == TokenErrors.WRONG_TOKEN_TYPE
         assert res_data.token_type == TokenTypes.REFRESH
 
@@ -136,6 +137,6 @@ class TestAuthFails:
             json=expired_token_request.model_dump(),
         )
         assert refresh_response.status_code == status.HTTP_401_UNAUTHORIZED
-        res_data = TokenExceptionContent.model_validate(refresh_response.json())
+        res_data = TokenErrorContent.model_validate(refresh_response.json())
         assert res_data.token_type == TokenTypes.REFRESH
         assert res_data.error_type == TokenErrors.EXPIRED

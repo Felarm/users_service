@@ -15,7 +15,7 @@ services:
     networks:
       - backend
 
-  postgres:
+  users_service_postgres_db:
     image: postgres:alpine3.22
     volumes:
       - ./db_data/users_service:/var/lib/postgresql

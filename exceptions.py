@@ -23,12 +23,19 @@ class UnauthorizedException(BaseAppException):
         super().__init__(msg, status_code=status.HTTP_401_UNAUTHORIZED)
 
 
+class ResourceConflictException(BaseAppException):
+    def __init__(self, msg: str):
+        super().__init__(msg, status_code=status.HTTP_409_CONFLICT)
+
+
 class UserNotFoundException(ResourceNotFoundException):
-    pass
+    def __init__(self, msg: str = None):
+        super().__init__("User not found" if msg is None else msg)
 
 
 class SessionNotFoundException(ResourceNotFoundException):
-    pass
+    def __init__(self, msg: str = None):
+        super().__init__("Session not found" if msg is None else msg)
 
 
 class TokenException(UnauthorizedException):
