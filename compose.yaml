@@ -10,7 +10,7 @@ services:
     env_file:
       - .env_app
     depends_on:
-      postgres:
+      users_service_postgres_db:
         condition: service_healthy
     networks:
       - backend
