@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, Literal
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -41,3 +41,15 @@ class TokenModelResponse(BaseModel):
 
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class TokenErrors(str, Enum):
+    EXPIRED = "expired token"
+    INVALID_DATA = "invalid token"
+    WRONG_TOKEN_TYPE = "wrong token type"
+
+
+class TokenErrorContent(BaseModel):
+    detail: str
+    token_type: Literal[TokenTypes.ACCESS, TokenTypes.REFRESH, TokenTypes.SERVICE]
+    error_type: Literal[TokenErrors.EXPIRED, TokenErrors.WRONG_TOKEN_TYPE, TokenErrors.INVALID_DATA]

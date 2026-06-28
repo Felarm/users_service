@@ -4,7 +4,7 @@ from typing import Sequence, Optional
 from sqlalchemy import select, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.session import Session
+from auth_session.models import Session
 
 
 class SessionRepository:

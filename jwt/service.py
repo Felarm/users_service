@@ -1,34 +1,13 @@
-import secrets
-import string
 from datetime import datetime, UTC, timedelta
 from typing import Union
 
 from jose import jwt, JWTError, ExpiredSignatureError
-from pwdlib import PasswordHash
 
 from config import settings
 from exceptions import TokenException
-from schemas.auth_token import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes
-from schemas.errors import TokenErrors
-from schemas.user import UserModelResponse
-
-
-class PasswordService:
-    pwd_context = PasswordHash.recommended()
-
-    @classmethod
-    def verify_password(cls, input_password: str, hashed_password: str) -> bool:
-        return cls.pwd_context.verify(input_password, hashed_password)
-
-    @classmethod
-    def hash_password(cls, input_password: str) -> str:
-        return cls.pwd_context.hash(input_password)
-
-    @classmethod
-    def generate_n_hash_password(cls) -> str:
-        alphabet = string.ascii_letters + string.digits
-        random_chars = "".join(secrets.choice(alphabet) for _ in range(16))
-        return cls.pwd_context.hash(random_chars)
+from jwt.schemas import AccessTokenPayload, RefreshTokenPayload, ServiceTokenPayload, TokenModelResponse, TokenTypes, \
+    TokenErrors
+from users.schemas import UserModelResponse
 
 
 class JWTService:

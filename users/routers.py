@@ -1,8 +1,8 @@
 from fastapi import APIRouter, status, Depends
 
 from dependencies import get_user_service, get_service_user_id
-from schemas.user import UserModelResponse
-from services.user import UserService
+from users.schemas import UserModelResponse
+from users.service import UserService
 
 router = APIRouter(prefix="/users", tags=["Users"])
 

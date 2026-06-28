@@ -5,10 +5,10 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.v1.auth import router as auth_router
-from api.v1.user import router as users_router
+from auth_session.routers import router as auth_router
+from users.routers import router as users_router
 from exceptions import BaseAppException, TokenException
-from schemas.errors import TokenErrorContent
+from jwt.schemas import TokenErrorContent
 from tasks import delete_expired_user_sessions
 
 

@@ -5,9 +5,9 @@ import pytest
 
 from config import settings
 from exceptions import SessionNotFoundException, TokenException
-from schemas.auth_token import TokenTypes
-from schemas.user import UserCreate, UserModelResponse, UserFromTg, UserLogin
-from services.security import JWTService
+from jwt.schemas import TokenTypes
+from users.schemas import UserCreate, UserModelResponse, UserFromTg, UserLogin
+from jwt.service import JWTService
 
 
 class TestUserService:

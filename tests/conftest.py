@@ -9,14 +9,14 @@ from config import settings
 from database import Base
 from dependencies import get_db_session
 from main import app
-from repositories.session import SessionRepository
-from repositories.user import UserRepository
-from schemas.session import SessionModel
-from schemas.auth_token import TokenModelResponse
-from schemas.user import UserModelResponse, UserCreate
-from services.security import JWTService
-from services.session import SessionService
-from services.user import UserService
+from auth_session.repository import SessionRepository
+from users.repository import UserRepository
+from auth_session.schemas import SessionModel
+from jwt.schemas import TokenModelResponse
+from users.schemas import UserModelResponse, UserCreate
+from jwt.service import JWTService
+from auth_session.service import SessionService
+from users.service import UserService
 
 
 @pytest_asyncio.fixture(scope="function")

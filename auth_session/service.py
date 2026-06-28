@@ -1,11 +1,14 @@
+import secrets
+import string
 from datetime import datetime, UTC
 
+from pwdlib import PasswordHash
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions import SessionNotFoundException
-from repositories.session import SessionRepository
-from schemas.session import SessionModel
-from services.security import JWTService
+from auth_session.repository import SessionRepository
+from auth_session.schemas import SessionModel
+from jwt.service import JWTService
 
 
 class SessionService:
@@ -28,3 +31,21 @@ class SessionService:
 
     async def revoke_user_session(self, user_session_id: int) -> None:
         await self.repo.delete_user_session(user_session_id)
+
+
+class PasswordService:
+    pwd_context = PasswordHash.recommended()
+
+    @classmethod
+    def verify_password(cls, input_password: str, hashed_password: str) -> bool:
+        return cls.pwd_context.verify(input_password, hashed_password)
+
+    @classmethod
+    def hash_password(cls, input_password: str) -> str:
+        return cls.pwd_context.hash(input_password)
+
+    @classmethod
+    def generate_n_hash_password(cls) -> str:
+        alphabet = string.ascii_letters + string.digits
+        random_chars = "".join(secrets.choice(alphabet) for _ in range(16))
+        return cls.pwd_context.hash(random_chars)

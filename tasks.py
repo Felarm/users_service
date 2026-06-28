@@ -3,7 +3,7 @@ import asyncio
 from loguru import logger
 
 from database import async_session_maker
-from repositories.session import SessionRepository
+from auth_session.repository import SessionRepository
 
 
 async def delete_expired_user_sessions() -> None:

@@ -3,12 +3,11 @@ from typing import Annotated
 from fastapi import APIRouter, status, Depends
 
 from dependencies import get_user_service, get_session_service, get_service_user_id
-from schemas.auth_token import TokenModelResponse, RefreshTokenRequest
-from schemas.errors import TokenErrorContent
-from schemas.user import UserFromTg, UserCreate, UserFilter, UserLogin
-from services.security import JWTService
-from services.session import SessionService
-from services.user import UserService
+from jwt.schemas import TokenModelResponse, RefreshTokenRequest, TokenErrorContent
+from users.schemas import UserFromTg, UserCreate, UserFilter, UserLogin
+from jwt.service import JWTService
+from auth_session.service import SessionService
+from users.service import UserService
 
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])

@@ -3,7 +3,7 @@ from datetime import datetime, UTC, timedelta
 import pytest
 from sqlalchemy.exc import IntegrityError
 
-from repositories.user import UserRepository
+from users.repository import UserRepository
 
 
 class TestUserRepository:

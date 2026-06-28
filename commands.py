@@ -6,8 +6,9 @@ from loguru import logger
 
 from database import async_session_maker
 from main import app
-from models.user import User
-from services.security import PasswordService, JWTService
+from users.models import User
+from jwt.service import JWTService
+from auth_session.service import PasswordService
 
 
 async def create_service_user(username: str, password: str) -> None:

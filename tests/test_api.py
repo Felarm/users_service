@@ -7,12 +7,11 @@ from httpx import AsyncClient
 
 from exceptions import SessionNotFoundException
 from main import app
-from schemas.session import SessionModel
-from schemas.auth_token import TokenModelResponse, RefreshTokenRequest, TokenTypes
-from schemas.errors import TokenErrors, TokenErrorContent
-from schemas.user import UserFromTg, UserCreate, UserLogin, UserModelResponse
-from services.security import JWTService
-from services.session import SessionService
+from auth_session.schemas import SessionModel
+from jwt.schemas import TokenModelResponse, RefreshTokenRequest, TokenTypes, TokenErrors, TokenErrorContent
+from users.schemas import UserFromTg, UserCreate, UserLogin, UserModelResponse
+from jwt.service import JWTService
+from auth_session.service import SessionService
 from tests.conftest import async_client
 
 

@@ -1,9 +1,9 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from exceptions import ValidationException, UserNotFoundException, ResourceConflictException
-from repositories.user import UserRepository
-from schemas.user import UserFilter, UserModelResponse, UserCreate, UserFromTg, UserLogin
-from services.security import PasswordService
+from users.repository import UserRepository
+from users.schemas import UserFilter, UserModelResponse, UserCreate, UserFromTg, UserLogin
+from auth_session.service import PasswordService
 
 
 class UserService:
