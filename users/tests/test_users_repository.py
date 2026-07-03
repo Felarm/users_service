@@ -29,12 +29,12 @@ class TestUserRepository:
     async def test_get_user_by(self, user_repo):
         new_user = await user_repo.create_user(
             hashed_password="1",
-            username="test_user",
-            tg_id=1,
+            username="test_user_for_get_by",
+            tg_id=10101,
         )
         user_by_id = await user_repo.get_user_by_id(new_user.id)
         assert new_user == user_by_id
-        user_by_username = await user_repo.get_user_by_username("test_user")
+        user_by_username = await user_repo.get_user_by_username("test_user_for_get_by")
         assert new_user == user_by_username
-        user_by_tg_id = await user_repo.get_user_by_tg_id(1)
+        user_by_tg_id = await user_repo.get_user_by_tg_id(10101)
         assert new_user == user_by_tg_id

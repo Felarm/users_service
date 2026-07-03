@@ -21,12 +21,14 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+asyncio_mode = "auto"
 asyncio_default_fixture_loop_scope = "session"
+asyncio_default_test_loop_scope = "session"
 pythonpath = [
   "."
 ]
 
 [tool.pytest_env]
-DB_HOST="127.0.0.1"
-DB_PORT=5432
-REDIS_HOST="127.0.0.1"
+DB_HOST = "127.0.0.1"
+DB_PORT = 5432
+REDIS_HOST = "127.0.0.1"
