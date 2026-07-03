@@ -6,17 +6,16 @@ from fastapi.responses import JSONResponse
 from loguru import logger
 
 from auth_session.routers import router as auth_router
+from database import redis_client
 from users.routers import router as users_router
 from exceptions import BaseAppException, TokenException
-from jwt.schemas import TokenErrorContent
-from tasks import delete_expired_user_sessions
+from auth_session.schemas import TokenErrorContent
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    delete_task = asyncio.create_task(delete_expired_user_sessions())
     yield
-    delete_task.cancel()
+    await redis_client.aclose()
 
 
 app = FastAPI(lifespan=lifespan)

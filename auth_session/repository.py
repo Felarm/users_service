@@ -1,42 +1,55 @@
-from datetime import datetime, UTC
-from typing import Sequence, Optional
+import json
+from dataclasses import dataclass
+from enum import Enum
+from typing import Optional
 
-from sqlalchemy import select, delete
-from sqlalchemy.ext.asyncio import AsyncSession
+from redis.asyncio import Redis
 
-from auth_session.models import Session
+from config import settings
+
+
+class SessionStatus(str, Enum):
+    active = "active"
+    grace_period = "grace_period"
+
+
+@dataclass
+class SessionData:
+    status: SessionStatus
+    user_id: int | None = None
+    new_token: str | None = None
+
+    def to_dict(self) -> dict[str, int | str]:
+        if self.user_id:
+            return {"status": self.status, "user_id": self.user_id}
+        elif self.new_token:
+            return {"status": self.status, "new_token": self.new_token}
+        else:
+            raise KeyError("user_id or new_token should be specified")
 
 
 class SessionRepository:
-    def __init__(self, db_session: AsyncSession):
-        self.db_session = db_session
+    def __init__(self, client: Redis):
+        self.client = client
+        self.prefix = "session:"
 
-    async def create_user_session(self, user_id: int, jti: str, expires_timestamp: int) -> Session:
-        new_obj = Session(
-            user_id=user_id,
-            jti=jti,
-            expires_at=datetime.fromtimestamp(expires_timestamp, UTC),
-        )
-        self.db_session.add(new_obj)
-        await self.db_session.commit()
-        return new_obj
+    async def create_session(self, user_id: int, refresh_token: str, ttl: int) -> None:
+        key = f"{self.prefix}{refresh_token}"
+        data = SessionData(status=SessionStatus.active, user_id=user_id).to_dict()
+        await self.client.set(key, json.dumps(data), ex=ttl)
 
-    async def get_user_sessions(self, user_id: int) -> Sequence[Session]:
-        q = select(Session).where(Session.user_id == user_id)
-        result = await self.db_session.execute(q)
-        return result.scalars().all()
+    async def get_session(self, refresh_token: str) -> Optional[SessionData]:
+        key = f"{self.prefix}{refresh_token}"
+        data = await self.client.get(key)
+        return SessionData(**json.loads(data)) if data else None
 
-    async def get_session_by_jti(self, jti: str) -> Optional[Session]:
-        q = select(Session).where(Session.jti == jti)
-        result = await self.db_session.execute(q)
-        return result.scalar_one_or_none()
-
-    async def delete_user_session(self, session_id: int) -> None:
-        q = delete(Session).where(Session.id == session_id)
-        await self.db_session.execute(q)
-        await self.db_session.commit()
-
-    async def delete_expired_sessions(self) -> None:
-        q = delete(Session).where(Session.expires_at < datetime.now(UTC))
-        await self.db_session.execute(q)
-        await self.db_session.commit()
+    async def create_session_w_cooldown(
+            self, old_refresh_token: str, new_refresh_token: str, user_id: int, new_ttl: int) -> None:
+        old_key = f"{self.prefix}{old_refresh_token}"
+        new_key = f"{self.prefix}{new_refresh_token}"
+        old_data = SessionData(status=SessionStatus.grace_period, new_token=new_refresh_token).to_dict()
+        new_data = SessionData(status=SessionStatus.active, user_id=user_id).to_dict()
+        async with self.client.pipeline(transaction=True) as pipe:
+            pipe.set(old_key, json.dumps(old_data), ex=settings.COOLDOWN_REFRESH_TIME)
+            pipe.set(new_key, json.dumps(new_data), ex=new_ttl)
+            await pipe.execute()

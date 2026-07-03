@@ -32,6 +32,26 @@ services:
     networks:
       - backend
 
+  users_service_redis:
+    image: redis:alpine
+    container_name: users_service_redis
+    volumes:
+      - ./redis_data:/data
+    restart: always
+    ports:
+      - "6378:6379"
+    env_file:
+      - .env_db
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "$REDIS_PASSWORD", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD}", "--appendonly", "yes"]
+    networks:
+      - backend
+
+
 networks:
   backend:
     driver: bridge

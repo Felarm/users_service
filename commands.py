@@ -7,13 +7,12 @@ from loguru import logger
 from database import async_session_maker
 from main import app
 from users.models import User
-from jwt.service import JWTService
-from auth_session.service import PasswordService
+from auth_session.security import SecurityService
 
 
 async def create_service_user(username: str, password: str) -> None:
     async with async_session_maker() as db_session:
-        hashed_password = PasswordService.hash_password(password)
+        hashed_password = SecurityService.hash_password(password)
         new_service_user = User(
             username=username,
             hashed_password=hashed_password,
@@ -21,8 +20,8 @@ async def create_service_user(username: str, password: str) -> None:
         )
         db_session.add(new_service_user)
         await db_session.commit()
-        service_token_payload = JWTService._create_service_payload(new_service_user)
-        logger.info(JWTService._encode_jwt(service_token_payload))
+        service_token = SecurityService.create_service_token(new_service_user)
+        logger.info(service_token)
 
 
 def export_contracts():

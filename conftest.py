@@ -3,23 +3,20 @@ from typing import Any, AsyncGenerator
 import pytest
 import pytest_asyncio
 from httpx import AsyncClient, ASGITransport
+from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession, async_sessionmaker
 
+from auth_session.tests.conftest import session_service
 from config import settings
 from database import Base
 from dependencies import get_db_session
 from main import app
-from auth_session.repository import SessionRepository
-from users.repository import UserRepository
-from auth_session.schemas import SessionModel
-from jwt.schemas import TokenModelResponse
+from auth_session.schemas import TokenModelResponse
 from users.schemas import UserModelResponse, UserCreate
-from jwt.service import JWTService
-from auth_session.service import SessionService
 from users.service import UserService
 
 
-@pytest_asyncio.fixture(scope="function")
+@pytest_asyncio.fixture(scope="session")
 async def engine() -> AsyncGenerator[AsyncEngine, Any]:
     engine = create_async_engine(url=settings.test_db_url, echo=False)
     async with engine.begin() as conn:
@@ -39,14 +36,11 @@ async def db_session(engine) -> AsyncGenerator[AsyncSession, Any]:
         await session.rollback()
 
 
-@pytest.fixture(scope="function")
-def user_repo(db_session) -> UserRepository:
-    return UserRepository(db_session)
-
-
-@pytest.fixture(scope="function")
-def session_repo(db_session) -> SessionRepository:
-    return SessionRepository(db_session)
+@pytest_asyncio.fixture(scope="session")
+async def redis_client() -> AsyncGenerator[Redis, Any]:
+    redis_client = Redis.from_url(settings.redis_url)
+    yield redis_client
+    await redis_client.aclose()
 
 
 @pytest.fixture(scope="function")
@@ -54,31 +48,14 @@ def user_service(db_session) -> UserService:
     return UserService(db_session)
 
 
-@pytest.fixture(scope="function")
-def session_service(db_session) -> SessionService:
-    return SessionService(db_session)
-
-
-@pytest.fixture(scope="function")
-def jwt_service() -> JWTService:
-    return JWTService()
-
-
 @pytest_asyncio.fixture(scope="function")
 async def single_user(user_service) -> UserModelResponse:
     return await user_service.register_new_user(UserCreate(username="single_user", password="pwd", tg_id=1111))
 
 
-@pytest.fixture(scope="function")
-def single_users_tokens(single_user) -> TokenModelResponse:
-    return JWTService().create_tokens_for_user(single_user)
-
-
 @pytest_asyncio.fixture(scope="function")
-async def single_user_session(
-        session_service, single_user, single_users_tokens
-) -> SessionModel:
-    return await session_service.create_session_for_user(single_user.id, single_users_tokens.refresh_token)
+async def single_users_tokens(single_user, session_service) -> TokenModelResponse:
+    return await session_service.create_session_tokens(single_user)
 
 
 @pytest_asyncio.fixture(scope="function")
@@ -92,9 +69,3 @@ async def async_client(db_session) -> AsyncGenerator[AsyncClient, Any]:
     ) as client:
         yield client
     app.dependency_overrides.clear()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def service_token(single_user) -> str:
-    service_payload = JWTService._create_service_payload(single_user)
-    return JWTService._encode_jwt(service_payload)

@@ -1,51 +1,56 @@
-import secrets
-import string
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta
+from uuid import uuid4
 
-from pwdlib import PasswordHash
-from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt
+from redis.asyncio import Redis
 
+from config import settings
 from exceptions import SessionNotFoundException
-from auth_session.repository import SessionRepository
-from auth_session.schemas import SessionModel
-from jwt.service import JWTService
+from auth_session.repository import SessionRepository, SessionStatus
+from auth_session.schemas import AccessTokenPayload, TokenModelResponse
+from users.schemas import UserModelResponse, UserFilter
+from users.service import UserService
 
 
 class SessionService:
-    def __init__(self, db_session: AsyncSession):
-        self.repo = SessionRepository(db_session)
+    def __init__(self, redis_client: Redis):
+        self.repo = SessionRepository(redis_client)
 
-    async def create_session_for_user(self, user_id: int, refresh_token: str) -> SessionModel:
-        refresh_payload = JWTService().get_refresh_token_payload(refresh_token)
-        new_session = await self.repo.create_user_session(user_id, refresh_payload.jti, refresh_payload.exp)
-        return SessionModel.model_validate(new_session)
+    async def create_session_tokens(self, user: UserModelResponse) -> TokenModelResponse:
+        now = datetime.now(UTC)
+        new_refresh_token = str(uuid4())
+        expire_delta = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        await self.repo.create_session(user.id, new_refresh_token, int(expire_delta.timestamp()))
+        new_access_token = self.create_access_token(user, now)
+        return TokenModelResponse(access_token=new_access_token, refresh_token=new_refresh_token)
 
-    async def get_user_session_by_token(self, encoded_refresh_token: str) -> SessionModel:
-        refresh_payload = JWTService().get_refresh_token_payload(encoded_refresh_token)
-        current_session = await self.repo.get_session_by_jti(refresh_payload.jti)
-        if current_session is None:
+    async def refresh_tokens(self, refresh_token: str, user_service: UserService) -> TokenModelResponse:
+        current_session_data = await self.repo.get_session(refresh_token)
+        if current_session_data is None:
             raise SessionNotFoundException
-        if current_session.expires_at < datetime.now(UTC):
-            await self.revoke_user_session(current_session.id)
-        return SessionModel.model_validate(current_session)
+        if current_session_data.status == SessionStatus.grace_period and current_session_data.new_token is not None:
+            already_created_session_data = await self.repo.get_session(current_session_data.new_token)
+            if already_created_session_data is None or already_created_session_data.new_token is None:
+                raise SessionNotFoundException
+            user = await user_service.get_user_by(UserFilter(id=already_created_session_data.user_id))
+            new_access_token = self.create_access_token(user)
+            return TokenModelResponse(access_token=new_access_token, refresh_token=already_created_session_data.new_token)
+        user = await user_service.get_user_by(UserFilter(id=current_session_data.user_id))
+        now = datetime.now(UTC)
+        new_refresh_token = str(uuid4())
+        expire_delta = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        await self.repo.create_session_w_cooldown(refresh_token, new_refresh_token, user.id, int(expire_delta.timestamp()))
+        new_access_token = self.create_access_token(user, now)
+        return TokenModelResponse(access_token=new_access_token, refresh_token=new_refresh_token)
 
-    async def revoke_user_session(self, user_session_id: int) -> None:
-        await self.repo.delete_user_session(user_session_id)
-
-
-class PasswordService:
-    pwd_context = PasswordHash.recommended()
-
-    @classmethod
-    def verify_password(cls, input_password: str, hashed_password: str) -> bool:
-        return cls.pwd_context.verify(input_password, hashed_password)
-
-    @classmethod
-    def hash_password(cls, input_password: str) -> str:
-        return cls.pwd_context.hash(input_password)
-
-    @classmethod
-    def generate_n_hash_password(cls) -> str:
-        alphabet = string.ascii_letters + string.digits
-        random_chars = "".join(secrets.choice(alphabet) for _ in range(16))
-        return cls.pwd_context.hash(random_chars)
+    @staticmethod
+    def create_access_token(user: UserModelResponse, now: datetime = datetime.now(UTC)) -> str:
+        expires = now + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        new_access_token = AccessTokenPayload(
+            sub=str(user.id),
+            username=user.username,
+            tg_id=user.tg_id,
+            exp=int(expires.timestamp()),
+            iat=int(now.timestamp()),
+        )
+        return jwt.encode(new_access_token.model_dump(), settings.SECRET_KEY, settings.ALGORITHM)

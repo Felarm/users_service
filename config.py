@@ -14,12 +14,18 @@ class Settings(BaseSettings):
     DB_NAME: str
     DB_USER: str
     DB_PASSWORD: str
-    # jwt
+    # security
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
-    REFRESH_TOKEN_EXPIRE_DAYS: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 1
     SERVICE_TOKEN_EXPIRE_DAYS: int = 100
+    COOLDOWN_REFRESH_TIME: int = 5
+    # redis
+    REDIS_USER: str = "default"
+    REDIS_HOST: str = "localhost"
+    REDIS_PORT: int = 6379
+    REDIS_PASSWORD: str
 
 
     @property
@@ -31,6 +37,12 @@ class Settings(BaseSettings):
     @property
     def test_db_url(self) -> str:#tests
         return f"postgresql+asyncpg://test:test@{self.DB_HOST}:{self.DB_PORT}/tests"
+
+    @property
+    def redis_url(self) -> str:
+        return(
+            f"redis://{self.REDIS_USER}:{self.REDIS_PASSWORD}@{self.REDIS_HOST}:{self.REDIS_PORT}"
+        )
 
     model_config = SettingsConfigDict(env_file=".env_app", env_file_encoding="utf-8")
 

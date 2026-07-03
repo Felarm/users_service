@@ -11,6 +11,7 @@ dependencies = [
     "pytest>=9.0.3",
     "pytest-asyncio>=1.3.0",
     "python-jose>=3.5.0",
+    "redis==7.4.0",
     "sqlalchemy>=2.0.49",
 ]
 
@@ -20,6 +21,7 @@ dev = [
 ]
 
 [tool.pytest.ini_options]
+asyncio_default_fixture_loop_scope = "session"
 pythonpath = [
   "."
 ]
@@ -27,3 +29,4 @@ pythonpath = [
 [tool.pytest_env]
 DB_HOST="127.0.0.1"
 DB_PORT=5432
+REDIS_HOST="127.0.0.1"
