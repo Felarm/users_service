@@ -2,9 +2,9 @@ from typing import Annotated
 
 from fastapi import APIRouter, status, Depends
 
-from dependencies import get_user_service, get_session_service, get_service_user_id
-from auth_session.schemas import TokenModelResponse, RefreshTokenRequest, TokenErrorContent
-from users.schemas import UserFromTg, UserFilter
+from dependencies import get_user_service, get_session_service, check_service_user
+from auth_session.schemas import TokenModelResponse, RefreshTokenRequest
+from users.schemas import UserFromTg, UserFilter, UserModelResponse
 from auth_session.service import SessionService
 from users.service import UserService
 
@@ -12,16 +12,13 @@ from users.service import UserService
 router = APIRouter(prefix="/auth", tags=["Authentication"])
 UserService_ = Annotated[UserService, Depends(get_user_service)]
 SessionService_ = Annotated[SessionService, Depends(get_session_service)]
-ServiceTokenValidation = Annotated[str, Depends(get_service_user_id)]
+ServiceTokenValidation = Annotated[UserModelResponse, Depends(check_service_user)]
 
 
 @router.post(
     path="/register/tg",
     response_model=TokenModelResponse,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        401: {"model": TokenErrorContent}
-    }
 )
 async def register_tg(
         new_user_data: UserFromTg,
@@ -38,9 +35,6 @@ async def register_tg(
     path="/login/tg",
     response_model=TokenModelResponse,
     status_code=status.HTTP_200_OK,
-    responses={
-        401: {"model": TokenErrorContent}
-    }
 )
 async def login_tg(
         user_data: UserFromTg,
@@ -59,9 +53,6 @@ async def login_tg(
     path="/refresh",
     response_model=TokenModelResponse,
     status_code=status.HTTP_200_OK,
-    responses={
-        401: {"model": TokenErrorContent}
-    }
 )
 async def refresh_tokens(
         token: RefreshTokenRequest,

@@ -33,10 +33,10 @@ class SessionRepository:
         self.client = client
         self.prefix = "session:"
 
-    async def create_session(self, user_id: int, refresh_token: str, ttl: int) -> None:
+    async def create_session(self, user_id: int, refresh_token: str, expires_at_timestamp: int) -> None:
         key = f"{self.prefix}{refresh_token}"
         data = SessionData(status=SessionStatus.active, user_id=user_id).to_dict()
-        await self.client.set(key, json.dumps(data), ex=ttl)
+        await self.client.set(key, json.dumps(data), exat=expires_at_timestamp)
 
     async def get_session(self, refresh_token: str) -> Optional[SessionData]:
         key = f"{self.prefix}{refresh_token}"

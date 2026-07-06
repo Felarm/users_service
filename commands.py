@@ -10,18 +10,17 @@ from users.models import User
 from auth_session.security import SecurityService
 
 
-async def create_service_user(username: str, password: str) -> None:
+async def create_service_user(username: str) -> None:
     async with async_session_maker() as db_session:
-        hashed_password = SecurityService.hash_password(password)
+        service_password, hashed_service_password = SecurityService.generate_service_password()
         new_service_user = User(
             username=username,
-            hashed_password=hashed_password,
+            hashed_password=hashed_service_password,
             is_service=True
         )
         db_session.add(new_service_user)
         await db_session.commit()
-        service_token = SecurityService.create_service_token(new_service_user)
-        logger.info(service_token)
+        logger.info(service_password)
 
 
 def export_contracts():
@@ -37,13 +36,12 @@ def main():
 
     service_user_p = subparsers.add_parser("create_service_user", help="Returns service token")
     service_user_p.add_argument("--username", required=True, help="Username")
-    service_user_p.add_argument("--password", required=True, help="Password")
 
     subparsers.add_parser("export_openapi")
 
     args = parser.parse_args()
     if args.command == "create_service_user":
-        asyncio.run(create_service_user(args.username, args.password))
+        asyncio.run(create_service_user(args.username))
     elif args.command == "export_openapi":
         export_contracts()
 

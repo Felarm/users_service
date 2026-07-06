@@ -6,13 +6,15 @@ from redis.asyncio import Redis
 from sqlalchemy import NullPool
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine, AsyncSession, async_sessionmaker
 
+from auth_session.security import SecurityService
 from auth_session.tests.conftest import session_service
 from config import settings
 from database import Base
 from dependencies import get_db_session
-from exceptions import ResourceConflictException
+from exceptions import ResourceConflictException, UserNotFoundException
 from main import app
 from auth_session.schemas import TokenModelResponse
+from users.models import User
 from users.schemas import UserModelResponse, UserCreate, UserFilter
 from users.service import UserService
 
@@ -74,3 +76,23 @@ async def async_client(db_session) -> AsyncGenerator[AsyncClient, Any]:
     ) as client:
         yield client
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(scope="function")
+async def service_user_creds(db_session: AsyncSession, user_service: UserService) -> tuple[str, str]:
+    password = "test_pwd_123"
+    hashed_password = SecurityService.hash_password(password)
+    service_username = "test_service_user"
+    try:
+        existing_service_user = await user_service.get_user_by(UserFilter(username=service_username))
+        return existing_service_user.username, password
+    except UserNotFoundException:
+        service_user = User(
+            username=service_username,
+            hashed_password=hashed_password,
+            is_service=True,
+            is_active=True,
+        )
+        db_session.add(service_user)
+        await db_session.commit()
+        return service_username, password

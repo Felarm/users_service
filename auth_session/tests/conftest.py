@@ -1,5 +1,4 @@
 import pytest
-import pytest_asyncio
 
 from auth_session.repository import SessionRepository
 from auth_session.security import SecurityService
@@ -19,8 +18,3 @@ def session_service(redis_client) -> SessionService:
 @pytest.fixture(scope="function")
 def security_service() -> SecurityService:
     return SecurityService()
-
-
-@pytest_asyncio.fixture(scope="function")
-async def service_token(single_user) -> str:
-    return SecurityService.create_service_token(single_user)

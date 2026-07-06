@@ -19,8 +19,8 @@ class SessionService:
     async def create_session_tokens(self, user: UserModelResponse) -> TokenModelResponse:
         now = datetime.now(UTC)
         new_refresh_token = str(uuid4())
-        expire_delta = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
-        await self.repo.create_session(user.id, new_refresh_token, int(expire_delta.timestamp()))
+        expires_at = now + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
+        await self.repo.create_session(user.id, new_refresh_token, int(expires_at.timestamp()))
         new_access_token = self.create_access_token(user, now)
         return TokenModelResponse(access_token=new_access_token, refresh_token=new_refresh_token)
 

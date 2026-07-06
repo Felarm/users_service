@@ -23,14 +23,14 @@ class TestAuthSuccess:
     async def test_register_endpoints(
             self,
             async_client: AsyncClient,
-            service_token: str,
+            service_user_creds: tuple[str, str],
             endpoint_name: str,
             request_data: UserCreate | UserFromTg,
     ):
         response = await async_client.post(
             url=app.url_path_for(endpoint_name),
             json=request_data.model_dump(),
-            headers={"Authorization": f"Bearer {service_token}"},
+            auth=service_user_creds,
         )
         assert response.status_code == status.HTTP_201_CREATED
         user_tokens = TokenModelResponse.model_validate(response.json())
@@ -40,24 +40,17 @@ class TestAuthSuccess:
         assert access_token_payload.tg_id == request_data.tg_id
 
     @pytest.mark.asyncio
-    @pytest.mark.parametrize(
-        argnames=["endpoint_name", "request_data"],
-        argvalues=[
-            ("login_tg", UserFromTg(username="single_user", tg_id=1111)),
-        ]
-    )
-    async def test_login_endpoints(
+    async def test_login_tg(
             self,
             async_client: AsyncClient,
-            service_token: str,
-            endpoint_name: str,
-            request_data: UserFromTg,
+            service_user_creds: tuple[str, str],
             single_user: UserModelResponse,
     ):
+        request_data = UserFromTg(username=single_user.username, tg_id=single_user.tg_id)
         response = await async_client.post(
-            url=app.url_path_for(endpoint_name),
+            url=app.url_path_for("login_tg"),
             json=request_data.model_dump(),
-            headers={"Authorization": f"Bearer {service_token}"},
+            auth=service_user_creds,
         )
         assert response.status_code == status.HTTP_200_OK
         user_tokens = TokenModelResponse.model_validate(response.json())
@@ -72,14 +65,14 @@ class TestAuthSuccess:
             async_client: AsyncClient,
             single_users_tokens: TokenModelResponse,
             session_service: SessionService,
-            service_token: str,
+            service_user_creds: tuple[str, str],
     ):
         await asyncio.sleep(settings.COOLDOWN_REFRESH_TIME)
         request_data = RefreshTokenRequest(refresh_token=single_users_tokens.refresh_token)
         response = await async_client.post(
             url=app.url_path_for("refresh_tokens"),
             json=request_data.model_dump(),
-            headers={"Authorization": f"Bearer {service_token}"},
+            auth=service_user_creds,
         )
         assert response.status_code == status.HTTP_200_OK
         new_tokens = TokenModelResponse.model_validate(response.json())
@@ -89,7 +82,7 @@ class TestAuthSuccess:
         response = await async_client.post(
             url=app.url_path_for("refresh_tokens"),
             json=request_data.model_dump(),
-            headers={"Authorization": f"Bearer {service_token}"},
+            auth=service_user_creds,
         )
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -97,13 +90,13 @@ class TestAuthSuccess:
 class TestAuthFails:
     @pytest.mark.asyncio
     async def test_wrong_refresh_token_request(
-            self, async_client: AsyncClient, single_users_tokens: TokenModelResponse, service_token: str
+            self, async_client: AsyncClient, single_users_tokens: TokenModelResponse, service_user_creds: tuple[str, str]
     ):
         wrong_token_request = RefreshTokenRequest(refresh_token="wrong_token")
         refresh_response = await async_client.post(
             url=app.url_path_for("refresh_tokens"),
             json=wrong_token_request.model_dump(),
-            headers={"Authorization": f"Bearer {service_token}"},
+            auth=service_user_creds,
         )
         assert refresh_response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -112,7 +105,7 @@ class TestAuthFails:
         argnames="route_name",
         argvalues=["login_tg", "register_tg", "refresh_tokens"],
     )
-    async def test_missing_service_token(self, async_client: AsyncClient, route_name: str):
+    async def test_missing_service_creds(self, async_client: AsyncClient, route_name: str):
         login_response = await async_client.post(
             url=app.url_path_for(route_name),
             json="some payload",
@@ -120,5 +113,14 @@ class TestAuthFails:
         assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
 
     @pytest.mark.asyncio
-    async def test_expired_service_token(self, async_client: AsyncClient):
-        pass
+    @pytest.mark.parametrize(
+        argnames="route_name",
+        argvalues=["login_tg", "register_tg", "refresh_tokens"],
+    )
+    async def test_wrong_service_creds(self, async_client: AsyncClient, route_name: str):
+        response = await async_client.post(
+            url=app.url_path_for(route_name),
+            json="some_payload",
+            auth=("some login", "some password"),
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
