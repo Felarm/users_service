@@ -39,4 +39,6 @@ class UserModelResponse(UserBase):
     created_at: datetime
     updated_at: datetime
     tg_id: Optional[int] = None
+    is_service: bool = False
+    hashed_password: str
     model_config = ConfigDict(from_attributes=True)

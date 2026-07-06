@@ -3,7 +3,7 @@ from typing import Sequence, Optional
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models.user import User
+from users.models import User
 
 
 class UserRepository:

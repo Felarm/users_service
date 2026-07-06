@@ -6,22 +6,21 @@ from loguru import logger
 
 from database import async_session_maker
 from main import app
-from models.user import User
-from services.security import PasswordService, JWTService
+from users.models import User
+from auth_session.security import SecurityService
 
 
-async def create_service_user(username: str, password: str) -> None:
+async def create_service_user(username: str) -> None:
     async with async_session_maker() as db_session:
-        hashed_password = PasswordService.hash_password(password)
+        service_password, hashed_service_password = SecurityService.generate_service_password()
         new_service_user = User(
             username=username,
-            hashed_password=hashed_password,
+            hashed_password=hashed_service_password,
             is_service=True
         )
         db_session.add(new_service_user)
         await db_session.commit()
-        service_token_payload = JWTService._create_service_payload(new_service_user)
-        logger.info(JWTService._encode_jwt(service_token_payload))
+        logger.info(service_password)
 
 
 def export_contracts():
@@ -37,13 +36,12 @@ def main():
 
     service_user_p = subparsers.add_parser("create_service_user", help="Returns service token")
     service_user_p.add_argument("--username", required=True, help="Username")
-    service_user_p.add_argument("--password", required=True, help="Password")
 
     subparsers.add_parser("export_openapi")
 
     args = parser.parse_args()
     if args.command == "create_service_user":
-        asyncio.run(create_service_user(args.username, args.password))
+        asyncio.run(create_service_user(args.username))
     elif args.command == "export_openapi":
         export_contracts()
 

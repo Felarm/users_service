@@ -28,6 +28,11 @@ class ResourceConflictException(BaseAppException):
         super().__init__(msg, status_code=status.HTTP_409_CONFLICT)
 
 
+class ForbiddenException(BaseAppException):
+    def __init__(self, msg: str):
+        super().__init__(msg, status_code=status.HTTP_403_FORBIDDEN)
+
+
 class UserNotFoundException(ResourceNotFoundException):
     def __init__(self, msg: str = None):
         super().__init__("User not found" if msg is None else msg)
@@ -36,10 +41,3 @@ class UserNotFoundException(ResourceNotFoundException):
 class SessionNotFoundException(ResourceNotFoundException):
     def __init__(self, msg: str = None):
         super().__init__("Session not found" if msg is None else msg)
-
-
-class TokenException(UnauthorizedException):
-    def __init__(self, token_type: str, err_type: str):
-        super().__init__(msg="Token error")
-        self.token_type = token_type
-        self.err_type = err_type

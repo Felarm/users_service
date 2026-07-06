@@ -1,22 +1,19 @@
-import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from loguru import logger
 
-from api.v1.auth import router as auth_router
-from api.v1.user import router as users_router
-from exceptions import BaseAppException, TokenException
-from schemas.errors import TokenErrorContent
-from tasks import delete_expired_user_sessions
+from auth_session.routers import router as auth_router
+from database import redis_client
+from users.routers import router as users_router
+from exceptions import BaseAppException
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    delete_task = asyncio.create_task(delete_expired_user_sessions())
     yield
-    delete_task.cancel()
+    await redis_client.aclose()
 
 
 app = FastAPI(lifespan=lifespan)
@@ -30,18 +27,4 @@ async def base_app_exc_handler(request: Request, exc: BaseAppException):
     return JSONResponse(
         status_code=exc.status_code,
         content={"detail": exc.msg}
-    )
-
-
-@app.exception_handler(TokenException)
-async def token_exc_handler(request: Request, exc: TokenException):
-    logger.error(exc.msg)
-    err_data = TokenErrorContent(
-        detail=exc.msg,
-        token_type=exc.token_type,
-        error_type=exc.err_type,
-    )
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=err_data.model_dump()
     )
