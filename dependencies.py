@@ -55,7 +55,7 @@ async def check_service_user(
         raise UnauthorizedException("Service user not found")
     if not service_user.is_service or not service_user.is_active:
         raise UnauthorizedException("Invalid service user right")
-    if not SecurityService.verify_password(raw_pwd, service_user.hashed_password):
+    if not await SecurityService.verify_password(raw_pwd, service_user.hashed_password):
         raise UnauthorizedException("Invalid service user password")
     await redis.setex(redis_key, 900, str(service_user.id))
     return service_user

@@ -12,7 +12,7 @@ from auth_session.security import SecurityService
 
 async def create_service_user(username: str) -> None:
     async with async_session_maker() as db_session:
-        service_password, hashed_service_password = SecurityService.generate_service_password()
+        service_password, hashed_service_password = await SecurityService.generate_service_password()
         new_service_user = User(
             username=username,
             hashed_password=hashed_service_password,

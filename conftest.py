@@ -81,7 +81,7 @@ async def async_client(db_session) -> AsyncGenerator[AsyncClient, Any]:
 @pytest.fixture(scope="function")
 async def service_user_creds(db_session: AsyncSession, user_service: UserService) -> tuple[str, str]:
     password = "test_pwd_123"
-    hashed_password = SecurityService.hash_password(password)
+    hashed_password = await SecurityService.hash_password(password)
     service_username = "test_service_user"
     try:
         existing_service_user = await user_service.get_user_by(UserFilter(username=service_username))
